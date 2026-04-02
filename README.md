@@ -24,7 +24,13 @@ ln -s /path/to/this/repo ~/.claude/skills/session-export
 
 ## Usage
 
-In Claude Code:
+Just ask Claude in natural language -- no need to memorize slash commands:
+
+> "Export my last session to markdown"
+> "Save this conversation to a file"
+> "Show me my recent sessions"
+
+Or use the slash command directly:
 
 ```
 /session-export                    # Interactive: pick session, format, destination

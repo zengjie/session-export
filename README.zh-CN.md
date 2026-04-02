@@ -24,7 +24,13 @@ ln -s /path/to/this/repo ~/.claude/skills/session-export
 
 ## 使用方法
 
-在 Claude Code 中：
+用自然语言对 Claude 说就行，无需记忆斜杠命令：
+
+> "帮我导出上一个会话"
+> "把这个对话保存成 Markdown"
+> "看看我最近的会话记录"
+
+也可以直接使用斜杠命令：
 
 ```
 /session-export                    # 交互模式：选择会话、格式和导出位置
