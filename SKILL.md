@@ -39,14 +39,19 @@ If the user's request already implies a scope (e.g., "show all my sessions" or "
 python3 {SKILL_DIR}/scripts/list_sessions.py --json --limit 20 [--project <cwd>]
 ```
 
-Parse the JSON output. Present sessions to the user via AskUserQuestion (not raw Bash output -- Bash output gets collapsed and is hard to read). Show up to 4 recent sessions as options. For each option:
+Parse the JSON output and present sessions via AskUserQuestion in pages of 4. Never show raw Bash output to the user -- it gets collapsed behind "ctrl+o to expand" in the terminal and is effectively invisible.
+
+**Page 1:** Show the 4 most recent sessions. For each option:
 - `label`: date + first ~25 chars of display
 - `description`: project name
 - `preview`: full session card showing date, project, display text, and ID
 
-The user can pick "Other" to type an ID/slug manually. If they do, list remaining sessions as a formatted Markdown table in your text response, then ask the user to provide the identifier.
+**Pagination:** If the user selects "Other", show the next 4 sessions (items 5-8) via another AskUserQuestion. Keep paginating until:
+- The user selects a session, OR
+- There are no more sessions to show, OR
+- The user types a specific ID/slug in "Other"
 
-**Important:** Never present the raw script output via Bash to the user. Always parse the `--json` output and present it through AskUserQuestion or formatted Markdown text. Raw Bash output gets collapsed behind "ctrl+o to expand" in the terminal, making it invisible.
+When presenting a page beyond the first, include a note like "Showing sessions 5-8 of 20. Select 'Other' for more or type an ID/slug." in the description of the last option or as text before the question.
 
 **Step 2 -- Select format**
 
