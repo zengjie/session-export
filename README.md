@@ -1,11 +1,13 @@
 # session-export
 
+English | [中文](README.zh-CN.md)
+
 A Claude Code skill that exports conversation sessions to readable Markdown.
 
 ## Install
 
 ```bash
-git clone <repo-url> ~/.claude/skills/session-export
+git clone https://github.com/zengjie/session-export.git ~/.claude/skills/session-export
 ```
 
 Or symlink from a local checkout:
