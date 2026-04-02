@@ -1,6 +1,6 @@
 ---
 name: session-export
-version: "2.0"
+version: "2.1"
 description: "Export Claude Code sessions to readable Markdown. Use when: 'export session', 'session to markdown', 'list sessions', 'show my sessions', 'session history', 'save conversation', 'export conversation', 'copy session'. Always use this skill when the user mentions exporting, saving, or sharing a Claude Code session, even if they don't say 'markdown' explicitly."
 user-invocable: true
 argument-hint: "[<session-id-or-slug>] [output-path]"
@@ -23,18 +23,30 @@ Respond in the language the user used to invoke this skill. If the user wrote in
 
 ## Interactive Flow
 
+**Step 0 -- Scope selection**
+
+Before listing sessions, ask the user which sessions to show. Use AskUserQuestion:
+- **Current project (Recommended)** -- only sessions from this working directory
+- **All projects** -- sessions across the entire machine
+
+For "Current project", pass `--project <cwd>` to the list script. For "All projects", omit `--project`.
+
+If the user's request already implies a scope (e.g., "show all my sessions" or "show sessions for this project"), skip this question and use the implied scope.
+
 **Step 1 -- List and select session**
 
 ```bash
-python3 {SKILL_DIR}/scripts/list_sessions.py --json --limit 20
+python3 {SKILL_DIR}/scripts/list_sessions.py --json --limit 20 [--project <cwd>]
 ```
 
-Use AskUserQuestion with up to 4 recent sessions. For each option:
+Parse the JSON output. Present sessions to the user via AskUserQuestion (not raw Bash output -- Bash output gets collapsed and is hard to read). Show up to 4 recent sessions as options. For each option:
 - `label`: date + first ~25 chars of display
 - `description`: project name
 - `preview`: full session card showing date, project, display text, and ID
 
-The user can pick "Other" to type an ID/slug manually. If they do, show the full text listing (run without `--json`) and ask them to provide the identifier.
+The user can pick "Other" to type an ID/slug manually. If they do, list remaining sessions as a formatted Markdown table in your text response, then ask the user to provide the identifier.
+
+**Important:** Never present the raw script output via Bash to the user. Always parse the `--json` output and present it through AskUserQuestion or formatted Markdown text. Raw Bash output gets collapsed behind "ctrl+o to expand" in the terminal, making it invisible.
 
 **Step 2 -- Select format**
 

@@ -65,6 +65,7 @@ def main():
     parser.add_argument("--limit", type=int, default=20, help="Number of sessions to show")
     parser.add_argument("--all", action="store_true", help="Show all sessions (no limit)")
     parser.add_argument("--json", action="store_true", help="Output as JSON array for programmatic use")
+    parser.add_argument("--project", "-p", help="Filter by project path (exact or substring match)")
     args = parser.parse_args()
 
     history_path = Path.home() / ".claude" / "history.jsonl"
@@ -76,6 +77,20 @@ def main():
     if not sessions:
         print("No sessions found.", file=sys.stderr)
         sys.exit(1)
+
+    # Filter by project if specified
+    if args.project:
+        project_filter = args.project.rstrip("/")
+        sessions = {
+            sid: s for sid, s in sessions.items()
+            if s["project"] and (
+                s["project"].rstrip("/") == project_filter
+                or project_filter in s["project"]
+            )
+        }
+        if not sessions:
+            print(f"No sessions found for project: {args.project}", file=sys.stderr)
+            sys.exit(1)
 
     sorted_sessions = sorted(sessions.values(), key=lambda s: s["lastTimestamp"], reverse=True)
     if not args.all:
