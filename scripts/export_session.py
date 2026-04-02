@@ -96,6 +96,16 @@ def truncate(text: str, maxlen: int = 80) -> str:
     return text if len(text) <= maxlen else text[:maxlen - 1] + "\u2026"
 
 
+def strip_tags(text: str) -> str:
+    """Remove XML/HTML tags and fragments for safe use in Markdown links."""
+    import re
+    # Remove complete tags: <tag>, </tag>, <tag attr="...">
+    text = re.sub(r"<[^>]+>", "", text)
+    # Remove incomplete/truncated tags: <tag-without-closing or </partial
+    text = re.sub(r"<[^>]*$", "", text)
+    return text
+
+
 def format_time(ts) -> str:
     """Format timestamp to short HH:MM."""
     if isinstance(ts, str):
@@ -186,7 +196,7 @@ def export_session(session_path: Path, lang: str = "en") -> str:
 
                 if user_text:
                     turn_count += 1
-                    turns.append((truncate(user_text), msg_time))
+                    turns.append((truncate(strip_tags(user_text)), msg_time))
 
                     # Turn heading + separator
                     if turn_count > 1:
