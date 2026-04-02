@@ -33,33 +33,24 @@ Just ask Claude in natural language -- no need to memorize slash commands:
 Or use the slash command directly:
 
 ```
-/session-export                    # Interactive: pick session, format, destination
-/session-export <id>               # Quick export to clipboard (clean format)
+/session-export                    # Interactive: pick session and destination
+/session-export <id>               # Quick export to clipboard
 /session-export <slug>             # Export by slug name
 /session-export <id> output.md     # Export to file
 ```
 
-### Formats
+## Export Format
 
-| Format | Description |
-|--------|-------------|
-| `clean` (default) | Conversation + one-line tool summaries |
-| `full` | Conversation + collapsible tool detail blocks |
-| `conversation` | Text only, no tool information |
+Each export contains two sections:
 
-### Destinations
-
-| Destination | Description |
-|-------------|-------------|
-| Clipboard (default) | Copies Markdown to system clipboard |
-| Current directory | Saves `{slug}.md` in working directory |
-| Downloads | Saves to `~/Downloads/{slug}.md` |
+- **Summary** -- numbered list of user messages with anchor links for quick navigation
+- **Transcript** -- full conversation with tool calls shown as `[Tool: args]`
 
 ## Standalone
 
 ```bash
 python3 scripts/list_sessions.py --limit 20
 python3 scripts/list_sessions.py --json --limit 4
-python3 scripts/export_session.py <id-or-slug> --format clean --clipboard
-python3 scripts/export_session.py <id-or-slug> --format full --output session.md
+python3 scripts/export_session.py <id-or-slug> --clipboard
+python3 scripts/export_session.py <id-or-slug> --lang zh --output session.md
 ```

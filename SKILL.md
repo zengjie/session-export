@@ -1,6 +1,6 @@
 ---
 name: session-export
-version: "2.1"
+version: "3.0"
 description: "Export Claude Code sessions to readable Markdown. Use when: 'export session', 'session to markdown', 'list sessions', 'show my sessions', 'session history', 'save conversation', 'export conversation', 'copy session'. Always use this skill when the user mentions exporting, saving, or sharing a Claude Code session, even if they don't say 'markdown' explicitly."
 user-invocable: true
 argument-hint: "[<session-id-or-slug>] [output-path]"
@@ -18,12 +18,12 @@ Respond in the language the user used to invoke this skill. If the user wrote in
 | Invocation | Behavior |
 |------------|----------|
 | `/session-export` | Interactive flow (Steps 1-4 below) |
-| `/session-export <id-or-slug>` | Direct: clipboard with clean format |
-| `/session-export <id-or-slug> <path>` | Direct: save to file with clean format |
+| `/session-export <id-or-slug>` | Direct: clipboard with default lang |
+| `/session-export <id-or-slug> <path>` | Direct: save to file |
 
 ## Interactive Flow
 
-**Step 0 -- Scope selection**
+**Step 1 -- Scope selection**
 
 Before listing sessions, ask the user which sessions to show. Use AskUserQuestion:
 - **Current project (Recommended)** -- only sessions from this working directory
@@ -33,55 +33,40 @@ For "Current project", pass `--project <cwd>` to the list script. For "All proje
 
 If the user's request already implies a scope (e.g., "show all my sessions" or "show sessions for this project"), skip this question and use the implied scope.
 
-**Step 1 -- List and select session**
+**Step 2 -- List and select session**
 
 ```bash
 python3 {SKILL_DIR}/scripts/list_sessions.py --json --limit 20 [--project <cwd>]
 ```
 
-Parse the JSON output and present sessions via AskUserQuestion in pages of 4. Never show raw Bash output to the user -- it gets collapsed behind "ctrl+o to expand" in the terminal and is effectively invisible.
+Parse the JSON output and present ALL sessions as a numbered list in your text response. Format as a compact table:
 
-**Page 1:** Show the 4 most recent sessions. For each option:
-- `label`: date + first ~25 chars of display
-- `description`: project name
-- `preview`: full session card showing date, project, display text, and ID
+```
+ #  Date        Project                   First Message
+ 1  04-02 21:34 playground/session-export  使用 /skill-creator 开发导出 Skill...
+ 2  04-02 21:32 playground/session-export  导出历史
+ 3  04-02 20:11 src/client                 /insights
+ ...
+```
 
-**Pagination:** If the user selects "Other", show the next 4 sessions (items 5-8) via another AskUserQuestion. Keep paginating until:
-- The user selects a session, OR
-- There are no more sessions to show, OR
-- The user types a specific ID/slug in "Other"
+Then ask the user to type a number to select. The user replies with just a number (e.g., `3`), and you map it to the corresponding session ID.
 
-When presenting a page beyond the first, include a note like "Showing sessions 5-8 of 20. Select 'Other' for more or type an ID/slug." in the description of the last option or as text before the question.
+**Never** present sessions via raw Bash output -- it gets collapsed behind "ctrl+o to expand" in the terminal and is effectively invisible. Always parse `--json` first and format the list yourself.
 
-**Step 2 -- Select format**
+**Step 3 -- Select destination and language**
 
-Use AskUserQuestion with preview showing sample output for each format:
-- **Clean (Recommended)** -- conversation + one-line tool summaries like `> **Bash**: \`cmd\``
-- **Full** -- conversation + collapsible `<details>` tool blocks
-- **Conversation** -- text only, no tool details
+Use AskUserQuestion with two questions in one call:
 
-**Step 3 -- Select destination**
-
-Use AskUserQuestion:
+Question 1 -- Destination:
 - **Clipboard (Recommended)** -- instant paste into docs, chats, or other LLMs
-- **Current directory** -- saves `{slug-or-id}.md` alongside project files
-- **Downloads** -- saves to `~/Downloads/{slug-or-id}.md`
+- **Current directory** -- saves alongside project files
+- **Downloads** -- saves to `~/Downloads/`
 
-**Step 4 -- Template language (conditional)**
+Question 2 -- Template language (ONLY if user invoked in non-English; skip for English users):
+- **Original language (Recommended)** -- labels match user's language (e.g., `### 用户` / `### 助手`)
+- **English** -- labels in English (e.g., `### User` / `### Assistant`)
 
-This controls the language of structural labels in the exported Markdown (e.g., `## User` vs `## 用户`, `**Date**` vs `**日期**`). Conversation content is never translated.
-
-ONLY ask this if the user invoked the skill in a non-English language. Skip entirely for English users (default to `--lang en`).
-
-Use AskUserQuestion:
-- **Original language (Recommended)** -- template labels match user's language (e.g., `## 用户` / `## 助手`)
-- **English** -- template labels in English (e.g., `## User` / `## Assistant`)
-
-Map selection to `--lang` flag: `zh` for Chinese labels, `en` for English.
-
-Supported `--lang` values: `en`, `zh`. Default: `en`.
-
-**Step 5 -- Export**
+**Step 4 -- Export**
 
 **Filename generation (for file destinations only):**
 
@@ -90,7 +75,7 @@ When saving to Current directory or Downloads, generate a descriptive filename f
 Rules for filename:
 - Read the user's first message (available in `display` from the JSON listing or the exported Markdown)
 - Derive a short English slug (3-5 words, kebab-case) that captures the session topic
-- Examples: `skill-export-development.md`, `git-commit-analysis.md`, `bingo-adventure-design-review.md`, `auth-middleware-bugfix.md`
+- Examples: `skill-export-development.md`, `git-commit-analysis.md`, `bingo-adventure-design-review.md`
 - If the first message is a slash command (like `/insights`), use the command name + project context
 - Keep it under 50 chars (excluding `.md`)
 
@@ -103,7 +88,7 @@ Map destination to flags:
 | Downloads | `--output ~/Downloads/{descriptive-slug}.md` |
 
 ```bash
-python3 {SKILL_DIR}/scripts/export_session.py <fullId> --format <fmt> --lang <lang> [flags]
+python3 {SKILL_DIR}/scripts/export_session.py <fullId> --lang <lang> [flags]
 ```
 
 After export, report: filename, destination, line count, and character count.
@@ -112,12 +97,12 @@ Replace `{SKILL_DIR}` with the base directory path shown when this skill loads.
 
 ## Gotchas
 
-1. **Combine AskUserQuestion calls.** Steps 2+3 (format + destination) can be asked in a single AskUserQuestion call (two questions). Step 4 (language) is conditional and separate. Minimize round-trips.
+1. **Session list goes in text, not AskUserQuestion.** AskUserQuestion is limited to 4 options, too few for session lists. Present the numbered list as formatted text and let the user type a number.
 
-2. **AskUserQuestion max 4 options.** Show the 4 most recent sessions. "Other" is automatic.
+2. **Large exports.** If clipboard content > 100k chars, warn the user and suggest file output instead.
 
-3. **Large exports.** If clipboard content > 100k chars, warn the user and suggest file output instead.
+3. **Clipboard on Linux.** Requires `xclip` or `xsel`. If clipboard fails, the script falls back to stdout automatically.
 
-4. **Clipboard on Linux.** Requires `xclip` or `xsel`. If clipboard fails, the script falls back to stdout automatically.
+4. **Tool markers use 4-space indent + brackets.** The `    [Tool: args]` notation renders as a code block in Markdown, avoiding conflicts with content that might contain blockquotes, headings, or HTML tags.
 
-5. **Translation scope.** When translating to English, only translate human-written text (user messages, assistant prose). Leave code, file paths, tool names, and commands unchanged.
+5. **Export has two sections.** The script outputs a Summary (numbered user messages with anchor links) followed by a full Transcript. No format flag needed.

@@ -33,45 +33,34 @@ ln -s /path/to/this/repo ~/.claude/skills/session-export
 也可以直接使用斜杠命令：
 
 ```
-/session-export                    # 交互模式：选择会话、格式和导出位置
-/session-export <id>               # 快速导出到剪贴板（clean 格式）
+/session-export                    # 交互模式：选择会话和导出位置
+/session-export <id>               # 快速导出到剪贴板
 /session-export <slug>             # 通过 slug 名称导出
 /session-export <id> output.md     # 导出到文件
 ```
 
-### 导出格式
+## 导出格式
 
-| 格式 | 说明 |
-|------|------|
-| `clean`（默认） | 对话内容 + 单行工具摘要 |
-| `full` | 对话内容 + 可折叠的工具详情块 |
-| `conversation` | 仅文本，不包含工具信息 |
+每份导出包含两个部分：
 
-### 导出位置
-
-| 位置 | 说明 |
-|------|------|
-| 剪贴板（默认） | 将 Markdown 复制到系统剪贴板 |
-| 当前目录 | 保存为 `{描述性文件名}.md` |
-| Downloads | 保存到 `~/Downloads/{描述性文件名}.md` |
+- **摘要** -- 用户消息编号列表，带锚点链接可快速跳转到对应位置
+- **记录** -- 完整对话记录，工具调用以 `[Tool: args]` 格式展示
 
 ### 模板语言
 
-导出文件的结构标签支持中英文切换：
+导出文件的结构标签支持中英文切换（`--lang zh` / `--lang en`）：
 
 | `--lang en` | `--lang zh` |
 |---|---|
-| `## User` | `## 用户` |
-| `## Assistant` | `## 助手` |
-| `**Date**` | `**日期**` |
-
-交互模式下，如果你用中文调用技能，会自动询问模板语言偏好。
+| `### User` | `### 用户` |
+| `### Assistant` | `### 助手` |
+| `## Summary` | `## 摘要` |
 
 ## 独立使用（无需 Claude Code）
 
 ```bash
 python3 scripts/list_sessions.py --limit 20
 python3 scripts/list_sessions.py --json --limit 4
-python3 scripts/export_session.py <id-or-slug> --format clean --clipboard
-python3 scripts/export_session.py <id-or-slug> --format clean --lang zh --output session.md
+python3 scripts/export_session.py <id-or-slug> --clipboard
+python3 scripts/export_session.py <id-or-slug> --lang zh --output session.md
 ```
